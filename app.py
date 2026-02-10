@@ -6,7 +6,7 @@ import google.generativeai as genai
 app = Flask(__name__)
 
 # Configuração do Gemini
-genai.configure(api_key="SUA_CHAVE_AQUI")
+genai.configure(api_key="GEMINI_API_KEY")
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 
@@ -27,4 +27,5 @@ def bot():
 
 
 if __name__ == "__main__":
+
     app.run(port=5000)

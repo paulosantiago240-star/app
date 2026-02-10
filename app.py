@@ -15,7 +15,7 @@ else:
     genai.configure(api_key=api_key, transport='rest')
 
 # Inicializa o modelo com o caminho completo do recurso
-model = genai.GenerativeModel('models/gemini-1.5-flash')
+model = genai.GenerativeModel(model_name='gemini-1.5-flash')
 
 @app.route("/bot", methods=['POST'])
 def bot():
@@ -41,3 +41,4 @@ if __name__ == "__main__":
     # Porta dinâmica para o Render
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+

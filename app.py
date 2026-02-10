@@ -13,6 +13,15 @@ if not api_key:
 else:
     # O transport='rest' evita problemas de conexão em servidores como o Render
     genai.configure(api_key=api_key, transport='rest')
+    
+# Isso vai listar no log do Render todos os modelos que sua chave pode usar
+try:
+    print("Modelos disponíveis para sua chave:")
+    for m in genai.list_models():
+        if 'generateContent' in m.supported_generation_methods:
+            print(f"- {m.name}")
+except Exception as e:
+    print(f"Não foi possível listar os modelos: {e}")
 
 # Inicializa o modelo com o caminho completo do recurso
 model = genai.GenerativeModel(model_name='gemini-1.5-flash')
@@ -41,4 +50,5 @@ if __name__ == "__main__":
     # Porta dinâmica para o Render
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 

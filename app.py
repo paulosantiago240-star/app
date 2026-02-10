@@ -19,9 +19,9 @@ model = genai.GenerativeModel('models/gemini-3-flash-preview')
 
 # Configurações para garantir que a resposta não demore muito e cause timeout
 generation_config = {
-    "temperature": 0.7,
+    "temperature": 0.4,
     "top_p": 0.95,
-    "max_output_tokens": 600, # Suficiente para explicações de engenharia
+    "max_output_tokens": 6000, # Suficiente para explicações de engenharia
 }
 
 @app.route("/bot", methods=['POST'])
@@ -51,3 +51,4 @@ if __name__ == "__main__":
     # Garante que o Flask use a porta correta do Render
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+

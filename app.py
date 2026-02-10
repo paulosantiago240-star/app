@@ -24,7 +24,7 @@ except Exception as e:
     print(f"Não foi possível listar os modelos: {e}")
 
 # Inicializa o modelo com o caminho completo do recurso
-model = genai.GenerativeModel(model_name='gemini-1.5-flash')
+model = genai.GenerativeModel(model_name='models/gemini-3-flash-preview')
 
 @app.route("/bot", methods=['POST'])
 def bot():
@@ -50,5 +50,6 @@ if __name__ == "__main__":
     # Porta dinâmica para o Render
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
 

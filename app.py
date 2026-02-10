@@ -7,7 +7,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
 
-# Configuração com o modelo Gemini 3 detectado nos seus logs
+# Usando o modelo potente detectado nos seus logs
 api_key = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key, transport='rest')
 model = genai.GenerativeModel('models/gemini-3-flash-preview')
@@ -17,7 +17,7 @@ def bot():
     user_msg = request.values.get('Body', '')
     num_media = int(request.values.get('NumMedia', 0))
     
-    # Preparamos o conteúdo para a IA (Texto + Arquivos)
+    # Conteúdo que será enviado para a inteligência artificial
     content_to_send = [user_msg if user_msg else "Analise este arquivo:"]
 
     try:
@@ -25,25 +25,25 @@ def bot():
             media_url = request.values.get('MediaUrl0')
             content_type = request.values.get('MediaContentType0')
             
-            # Lógica para Planilhas Excel
+            # Processamento de Planilhas (Excel)
             if 'spreadsheetml' in content_type or 'excel' in content_type:
-                # O pandas lê o arquivo diretamente da URL segura da Twilio
+                # O pandas lê o arquivo diretamente da URL
                 df = pd.read_excel(media_url)
-                resumo_excel = f"\n[DADOS DA PLANILHA EXCEL DETECTADOS]\n{df.to_string(index=False)}"
-                content_to_send.append(resumo_excel)
+                excel_data = f"\n[DADOS DO EXCEL]\n{df.head(50).to_string(index=False)}"
+                content_to_send.append(excel_data)
             
-            # Lógica para Imagens (Gráficos, Circuitos, Exercícios)
+            # Processamento de Imagens (Prints, Gráficos, Circuitos)
             elif 'image' in content_type:
-                image_data = requests.get(media_url).content
-                content_to_send.append({'mime_type': content_type, 'data': image_data})
+                image_bytes = requests.get(media_url).content
+                content_to_send.append({'mime_type': content_type, 'data': image_bytes})
 
-        # O Gemini 3 processa tudo e gera a resposta técnica
+        # Geração da resposta técnica
         response = model.generate_content(content_to_send)
         bot_response = response.text
 
     except Exception as e:
-        print(f"Erro no processamento: {e}")
-        bot_response = "Consegui receber seu arquivo, mas tive um erro ao lê-lo. Verifique se ele não tem senha."
+        print(f"Erro detalhado: {e}")
+        bot_response = "Recebi seu arquivo, mas tive um erro técnico ao processá-lo. Verifique se ele não tem senha."
 
     twilio_resp = MessagingResponse()
     twilio_resp.message(bot_response)

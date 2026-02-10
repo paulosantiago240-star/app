@@ -7,7 +7,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
 
-# Usando o modelo potente detectado nos seus logs
+# Configuração com o modelo Gemini 3 (o que sua chave exige)
 api_key = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key, transport='rest')
 model = genai.GenerativeModel('models/gemini-3-flash-preview')
@@ -17,7 +17,7 @@ def bot():
     user_msg = request.values.get('Body', '')
     num_media = int(request.values.get('NumMedia', 0))
     
-    # Conteúdo que será enviado para a inteligência artificial
+    # Preparamos o conteúdo para a IA (Texto + Arquivos)
     content_to_send = [user_msg if user_msg else "Analise este arquivo:"]
 
     try:
@@ -27,23 +27,24 @@ def bot():
             
             # Processamento de Planilhas (Excel)
             if 'spreadsheetml' in content_type or 'excel' in content_type:
-                # O pandas lê o arquivo diretamente da URL
+                # Baixa e lê o Excel diretamente da Twilio
                 df = pd.read_excel(media_url)
-                excel_data = f"\n[DADOS DO EXCEL]\n{df.head(50).to_string(index=False)}"
-                content_to_send.append(excel_data)
+                # Convertemos os primeiros dados para texto para a IA analisar
+                excel_text = f"\n[DADOS DA PLANILHA EXCEL]\n{df.head(50).to_string(index=False)}"
+                content_to_send.append(excel_text)
             
-            # Processamento de Imagens (Prints, Gráficos, Circuitos)
+            # Processamento de Imagens (Exercícios, Gráficos de Stress-Strain)
             elif 'image' in content_type:
-                image_bytes = requests.get(media_url).content
-                content_to_send.append({'mime_type': content_type, 'data': image_bytes})
+                image_data = requests.get(media_url).content
+                content_to_send.append({'mime_type': content_type, 'data': image_data})
 
-        # Geração da resposta técnica
+        # O Gemini 3 gera a resposta técnica completa
         response = model.generate_content(content_to_send)
         bot_response = response.text
 
     except Exception as e:
-        print(f"Erro detalhado: {e}")
-        bot_response = "Recebi seu arquivo, mas tive um erro técnico ao processá-lo. Verifique se ele não tem senha."
+        print(f"Erro detalhado no processamento: {e}")
+        bot_response = "Tive um erro ao ler o arquivo. Verifique se o formato está correto e se o servidor está ativo."
 
     twilio_resp = MessagingResponse()
     twilio_resp.message(bot_response)

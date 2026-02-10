@@ -1,54 +1,55 @@
 import os
+import requests
+import pandas as pd
 import google.generativeai as genai
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
 
-# Configuração da API Key com transporte REST para estabilidade no Render
+# Configuração da API (Gemini 3 Flash)
 api_key = os.environ.get("GEMINI_API_KEY")
-
-if not api_key:
-    print("ERRO: GEMINI_API_KEY não configurada no Environment do Render!")
-else:
-    # O transport='rest' é essencial para evitar quedas de conexão
-    genai.configure(api_key=api_key, transport='rest')
-
-# Inicializa o modelo Gemini 3 (o que sua chave exige)
+genai.configure(api_key=api_key, transport='rest')
 model = genai.GenerativeModel('models/gemini-3-flash-preview')
-
-# Configurações para garantir que a resposta não demore muito e cause timeout
-generation_config = {
-    "temperature": 0.4,
-    "top_p": 0.95,
-    "max_output_tokens": 1500, # Suficiente para explicações de engenharia
-}
 
 @app.route("/bot", methods=['POST'])
 def bot():
     user_msg = request.values.get('Body', '')
-    print(f"Mensagem recebida: {user_msg}") # Monitoramento nos Logs
+    num_media = int(request.values.get('NumMedia', 0))
     
-    try:
-        # Gera a resposta técnica
-        response = model.generate_content(
-            user_msg, 
-            generation_config=generation_config
-        )
-        bot_response = response.text
-    except Exception as e:
-        # Imprime o erro exato no log do Render se algo falhar
-        print(f"Erro detalhado na API: {e}")
-        bot_response = "Ops, tive um problema técnico para processar isso agora. Verifique os logs."
+    # Lista para armazenar o que enviaremos para a IA
+    content_to_send = [user_msg]
 
-    # Prepara a resposta XML para o WhatsApp (Twilio)
+    try:
+        # Se houver arquivo (Excel ou Imagem)
+        if num_media > 0:
+            media_url = request.values.get('MediaUrl0')
+            content_type = request.values.get('MediaContentType0')
+            
+            # Se for Excel, usamos Pandas para ler e transformar em texto
+            if 'spreadsheetml' in content_type or 'excel' in content_type:
+                df = pd.read_excel(media_url)
+                # Convertemos os primeiros dados para texto para a IA analisar
+                excel_text = f"\nConteúdo do arquivo Excel:\n{df.head(20).to_string()}"
+                content_to_send.append(excel_text)
+            
+            # Se for Imagem, o Gemini 3 já consegue ler pela URL (via Twilio)
+            elif 'image' in content_type:
+                image_data = requests.get(media_url).content
+                content_to_send.append({'mime_type': content_type, 'data': image_data})
+
+        # Geração da resposta
+        response = model.generate_content(content_to_send)
+        bot_response = response.text
+
+    except Exception as e:
+        print(f"Erro detalhado: {e}")
+        bot_response = "Tive um problema ao processar seu arquivo. Verifique se ele não está protegido por senha."
+
     twilio_resp = MessagingResponse()
     twilio_resp.message(bot_response)
-    
     return str(twilio_resp)
 
 if __name__ == "__main__":
-    # Garante que o Flask use a porta correta do Render
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
-

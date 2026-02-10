@@ -15,7 +15,7 @@ else:
     genai.configure(api_key=api_key)
 
 # Inicializa o modelo
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-pro')
 
 @app.route("/bot", methods=['POST'])
 def bot():
@@ -40,3 +40,4 @@ if __name__ == "__main__":
     # O Render define a porta automaticamente, o Flask a lerá
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
